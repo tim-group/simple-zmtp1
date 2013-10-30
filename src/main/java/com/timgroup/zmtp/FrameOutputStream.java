@@ -19,9 +19,21 @@ public class FrameOutputStream extends FilterOutputStream {
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
+        writeFrame(b, off, len, false);
+    }
+
+    public void writeMore(byte[] b) throws IOException {
+        writeMore(b, 0, b.length);
+    }
+
+    public void writeMore(byte[] b, int off, int len) throws IOException {
+        writeFrame(b, off, len, true);
+    }
+
+    private void writeFrame(byte[] b, int off, int len, boolean more) throws IOException {
         long frameLen = len + 1L;
         writeStretchy(frameLen);
-        out.write(flags(false));
+        out.write(flags(more));
         out.write(b, off, len);
     }
 
@@ -47,14 +59,6 @@ public class FrameOutputStream extends FilterOutputStream {
 
     private int flags(boolean more) {
         return more ? FLAG_MORE : 0;
-    }
-
-    public void writeFinal(byte[] b, int off, int len) throws IOException {
-        throw new UnsupportedOperationException("Auto-generated method stub 30 Oct 2013");
-    }
-
-    public void writeFrame(byte[] b, int off, int len, boolean isFinal) throws IOException {
-        throw new UnsupportedOperationException("Auto-generated method stub 30 Oct 2013");
     }
 
 }

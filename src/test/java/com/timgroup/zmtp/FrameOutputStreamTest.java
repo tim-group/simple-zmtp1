@@ -10,12 +10,22 @@ import static org.junit.Assert.assertArrayEquals;
 public class FrameOutputStreamTest {
 
     private static final int FINAL = 0;
+    private static final int MORE = 1;
 
     @Test
     public void writesBytesAsAFinalFrame() throws Exception {
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
         new FrameOutputStream(buf).write(new byte[] {10, 20, 30, 40});
+
+        assertArrayEquals(shortFrame(5, FINAL, new byte[] {10, 20, 30, 40}), buf.toByteArray());
+    }
+
+    @Test
+    public void writesASliceOfBytesAsAFinalFrame() throws Exception {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+
+        new FrameOutputStream(buf).write(new byte[] {99, 10, 20, 30, 40, 99}, 1, 4);
 
         assertArrayEquals(shortFrame(5, FINAL, new byte[] {10, 20, 30, 40}), buf.toByteArray());
     }
@@ -49,6 +59,24 @@ public class FrameOutputStreamTest {
         new FrameOutputStream(buf).write(body);
 
         assertArrayEquals(longFrame((byte) 0xff, 0, 0, 0, 0, 0, 0, (byte) (9001 / 256), (byte) (9001 % 256), FINAL, body), buf.toByteArray());
+    }
+
+    @Test
+    public void writesBytesAsAMoreFrame() throws Exception {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+
+        new FrameOutputStream(buf).writeMore(new byte[] {10, 20, 30, 40});
+
+        assertArrayEquals(shortFrame(5, MORE, new byte[] {10, 20, 30, 40}), buf.toByteArray());
+    }
+
+    @Test
+    public void writesASliceOfBytesAsAMoreFrame() throws Exception {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+
+        new FrameOutputStream(buf).writeMore(new byte[] {99, 10, 20, 30, 40, 99}, 1, 4);
+
+        assertArrayEquals(shortFrame(5, MORE, new byte[] {10, 20, 30, 40}), buf.toByteArray());
     }
 
     private byte[] shortFrame(int length, int flags, byte[] body) {
