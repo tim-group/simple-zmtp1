@@ -30,7 +30,7 @@ public class FrameOutputStream extends FilterOutputStream {
         writeFrame(b, off, len, true);
     }
 
-    private void writeFrame(byte[] b, int off, int len, boolean more) throws IOException {
+    public void writeFrame(byte[] b, int off, int len, boolean more) throws IOException {
         long frameLen = len + 1L;
         writeStretchy(frameLen);
         out.write(flags(more));

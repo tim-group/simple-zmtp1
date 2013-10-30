@@ -79,6 +79,24 @@ public class FrameOutputStreamTest {
         assertArrayEquals(shortFrame(5, MORE, new byte[] {10, 20, 30, 40}), buf.toByteArray());
     }
 
+    @Test
+    public void writesASliceOfBytesAsAFrameWithSpecifiedFinality() throws Exception {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+
+        new FrameOutputStream(buf).writeFrame(new byte[] {99, 10, 20, 30, 40, 99}, 1, 4, false);
+
+        assertArrayEquals(shortFrame(5, FINAL, new byte[] {10, 20, 30, 40}), buf.toByteArray());
+    }
+
+    @Test
+    public void writesASliceOfBytesAsAFrameWithSpecifiedMoreness() throws Exception {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+
+        new FrameOutputStream(buf).writeFrame(new byte[] {99, 10, 20, 30, 40, 99}, 1, 4, true);
+
+        assertArrayEquals(shortFrame(5, MORE, new byte[] {10, 20, 30, 40}), buf.toByteArray());
+    }
+
     private byte[] shortFrame(int length, int flags, byte[] body) {
         byte[] header = new byte[] {(byte) length, (byte) flags};
         return concatenate(header, body);
