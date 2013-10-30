@@ -5,11 +5,18 @@ public class FrameTestUtils {
     public static final int FINAL = 0;
     public static final int MORE = 1;
 
-    public static byte[] concatenate(byte[] a, byte[] b) {
-        byte[] c = new byte[a.length + b.length];
-        System.arraycopy(a, 0, c, 0, a.length);
-        System.arraycopy(b, 0, c, a.length, b.length);
-        return c;
+    public static byte[] concatenate(byte[]... parts) {
+        int length = 0;
+        for (byte[] part : parts) {
+            length += part.length;
+        }
+        byte[] whole = new byte[length];
+        int off = 0;
+        for (byte[] part : parts) {
+            System.arraycopy(part, 0, whole, off, part.length);
+            off += part.length;
+        }
+        return whole;
     }
 
     public static byte[] longFrame(int lengthFlag, int l0, int l1, int l2, int l3, int l4, int l5, int l6, int l7, int flags, byte[] body) {
