@@ -7,10 +7,12 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 
-public class FrameOutputStreamTest {
+import static com.timgroup.zmtp.FrameTestUtils.FINAL;
+import static com.timgroup.zmtp.FrameTestUtils.MORE;
+import static com.timgroup.zmtp.FrameTestUtils.longFrame;
+import static com.timgroup.zmtp.FrameTestUtils.shortFrame;
 
-    private static final int FINAL = 0;
-    private static final int MORE = 1;
+public class FrameOutputStreamTest {
 
     @Test
     public void writesBytesAsAFinalFrame() throws Exception {
@@ -95,23 +97,6 @@ public class FrameOutputStreamTest {
         new FrameOutputStream(buf).writeFrame(new byte[] {99, 10, 20, 30, 40, 99}, 1, 4, true);
 
         assertArrayEquals(shortFrame(5, MORE, new byte[] {10, 20, 30, 40}), buf.toByteArray());
-    }
-
-    private byte[] shortFrame(int length, int flags, byte[] body) {
-        byte[] header = new byte[] {(byte) length, (byte) flags};
-        return concatenate(header, body);
-    }
-
-    private byte[] longFrame(int lengthFlag, int l0, int l1, int l2, int l3, int l4, int l5, int l6, int l7, int flags, byte[] body) {
-        byte[] header = new byte[] {(byte) lengthFlag, (byte) l0, (byte) l1, (byte) l2, (byte) l3, (byte) l4, (byte) l5, (byte) l6, (byte) l7, (byte) flags};
-        return concatenate(header, body);
-    }
-
-    private byte[] concatenate(byte[] a, byte[] b) {
-        byte[] c = new byte[a.length + b.length];
-        System.arraycopy(a, 0, c, 0, a.length);
-        System.arraycopy(b, 0, c, a.length, b.length);
-        return c;
     }
 
 }
