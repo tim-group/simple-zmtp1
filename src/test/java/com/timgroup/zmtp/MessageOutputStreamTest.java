@@ -5,11 +5,12 @@ import java.util.Arrays;
 
 import org.junit.Test;
 
+import com.timgroup.io.ByteArrayUtils;
+
 import static org.junit.Assert.assertArrayEquals;
 
 import static com.timgroup.zmtp.FrameTestUtils.FINAL;
 import static com.timgroup.zmtp.FrameTestUtils.MORE;
-import static com.timgroup.zmtp.FrameTestUtils.concatenate;
 import static com.timgroup.zmtp.FrameTestUtils.shortFrame;
 
 public class MessageOutputStreamTest {
@@ -41,7 +42,7 @@ public class MessageOutputStreamTest {
 
         new MessageOutputStream(fout).write(new byte[] {99, 10, 20, 30, 40, 99}, 1, 4);
 
-        assertArrayEquals(concatenate(anonymousGreeting(), shortFrame(5, FINAL, new byte[] {10, 20, 30, 40})), buf.toByteArray());
+        assertArrayEquals(ByteArrayUtils.concatenate(anonymousGreeting(), shortFrame(5, FINAL, new byte[] {10, 20, 30, 40})), buf.toByteArray());
     }
 
     @Test
@@ -51,7 +52,7 @@ public class MessageOutputStreamTest {
 
         new MessageOutputStream(fout).write(99);
 
-        assertArrayEquals(concatenate(anonymousGreeting(), shortFrame(2, FINAL, new byte[] {99})), buf.toByteArray());
+        assertArrayEquals(ByteArrayUtils.concatenate(anonymousGreeting(), shortFrame(2, FINAL, new byte[] {99})), buf.toByteArray());
     }
 
     @Test
@@ -61,7 +62,7 @@ public class MessageOutputStreamTest {
 
         new MessageOutputStream(fout).write(Arrays.asList(new byte[] {10}, new byte[] {20}, new byte[] {30}));
 
-        assertArrayEquals(concatenate(anonymousGreeting(),
+        assertArrayEquals(ByteArrayUtils.concatenate(anonymousGreeting(),
                                       shortFrame(2, MORE, new byte[] {10}),
                                       shortFrame(2, MORE, new byte[] {20}),
                                       shortFrame(2, FINAL, new byte[] {30})),
