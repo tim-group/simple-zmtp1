@@ -33,6 +33,7 @@ public class ReconnectingSocketOutputStream extends OutputStream {
         Socket socket = new Socket(host, port);
         socket.shutdownInput();
         socket.setKeepAlive(true); // might help
+        socket.setSoLinger(false, 0);
         OutputStream out = socket.getOutputStream();
 
         // do this atomicallyish, so we can never have socket not null but out null
