@@ -3,6 +3,7 @@ package com.timgroup.io;
 public class ByteArrayUtils {
 
     public static byte[] pad(byte[] b, int length) {
+        if (b.length >= length) return b;
         byte[] padding = new byte[length - b.length];
         return ByteArrayUtils.concatenate(b, padding);
     }
