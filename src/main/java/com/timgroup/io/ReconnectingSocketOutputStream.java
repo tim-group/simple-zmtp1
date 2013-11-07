@@ -1,9 +1,11 @@
 package com.timgroup.io;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class ReconnectingSocketOutputStream extends OutputStream {
@@ -14,7 +16,6 @@ public class ReconnectingSocketOutputStream extends OutputStream {
     private final int port;
     private final int retryCount;
     private SocketChannel channel;
-    private OutputStream out;
 
     public ReconnectingSocketOutputStream(String host, int port, int retryCount) throws IOException {
         this.host = host;
@@ -36,11 +37,8 @@ public class ReconnectingSocketOutputStream extends OutputStream {
         Socket socket = channel.socket();
         socket.setKeepAlive(true); // might help
         socket.setTcpNoDelay(true);
-        OutputStream out = socket.getOutputStream();
 
-        // do this atomicallyish, so we can never have socket not null but out null
         this.channel = channel;
-        this.out = out;
     }
 
     @Override
@@ -51,13 +49,18 @@ public class ReconnectingSocketOutputStream extends OutputStream {
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
         for (int i = 0; i < retryCount; ++i) {
-            if (channel == null || (!channel.isConnected()) || !channel.isOpen()) {
+            if (channel == null || !channel.isOpen()) {
                 closeQuietly();
                 connect();
             }
             try {
-                out.write(b, off, len);
-                out.flush();
+                ByteBuffer buffer = ByteBuffer.wrap(b, off, len);
+                while (buffer.hasRemaining()) {
+                    int written = channel.write(buffer);
+                    if (written < 0) {
+                        throw new EOFException();
+                    }
+                }
                 return;
             } catch (Exception e) {
                 closeQuietly();
@@ -80,7 +83,6 @@ public class ReconnectingSocketOutputStream extends OutputStream {
             channel.close();
         } finally {
             channel = null;
-            out = null;
         }
     }
 
