@@ -23,7 +23,7 @@ import static org.junit.Assert.fail;
 
 public class ReconnectingSocketOutputStreamTest {
 
-    private static final int MINIMUM_DATA_TO_GET_BROKEN_PIPE = 128 * 1024 + 1;
+    private static final int MINIMUM_DATA_TO_GET_BROKEN_PIPE = 160 * 1024 + 1;
     private static final Random RANDOM = new Random();
 
     @Rule

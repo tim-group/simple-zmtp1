@@ -2,7 +2,9 @@ package com.timgroup.io;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.channels.SocketChannel;
 
 public class ReconnectingSocketOutputStream extends OutputStream {
 
@@ -11,7 +13,7 @@ public class ReconnectingSocketOutputStream extends OutputStream {
     private final String host;
     private final int port;
     private final int retryCount;
-    private Socket socket;
+    private SocketChannel channel;
     private OutputStream out;
 
     public ReconnectingSocketOutputStream(String host, int port, int retryCount) throws IOException {
@@ -26,18 +28,18 @@ public class ReconnectingSocketOutputStream extends OutputStream {
     }
 
     private void connect() throws IOException {
-        if (socket != null) {
-            throw new IllegalStateException("already connected to " + socket);
+        if (channel != null) {
+            throw new IllegalStateException("already connected to " + channel);
         }
 
-        Socket socket = new Socket(host, port);
-        socket.shutdownInput();
+        SocketChannel channel = SocketChannel.open(new InetSocketAddress(host, port));
+        Socket socket = channel.socket();
         socket.setKeepAlive(true); // might help
         socket.setTcpNoDelay(true);
         OutputStream out = socket.getOutputStream();
 
         // do this atomicallyish, so we can never have socket not null but out null
-        this.socket = socket;
+        this.channel = channel;
         this.out = out;
     }
 
@@ -49,7 +51,7 @@ public class ReconnectingSocketOutputStream extends OutputStream {
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
         for (int i = 0; i < retryCount; ++i) {
-            if (socket == null || (!socket.isConnected()) || socket.isClosed()) {
+            if (channel == null || (!channel.isConnected()) || !channel.isOpen()) {
                 closeQuietly();
                 connect();
             }
@@ -71,13 +73,13 @@ public class ReconnectingSocketOutputStream extends OutputStream {
 
     @Override
     public void close() throws IOException {
-        if (socket == null) {
+        if (channel == null) {
             return;
         }
         try {
-            socket.close();
+            channel.close();
         } finally {
-            socket = null;
+            channel = null;
             out = null;
         }
     }
