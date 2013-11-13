@@ -50,8 +50,7 @@ public class ReconnectingSocketOutputStream extends OutputStream {
     public void write(byte[] b, int off, int len) throws IOException {
         for (int i = 0; i < retryCount; ++i) {
             if (channel == null || !channel.isOpen()) {
-                closeQuietly();
-                connect();
+                reconnect();
             }
             try {
                 ByteBuffer buffer = ByteBuffer.wrap(b, off, len);
@@ -66,6 +65,11 @@ public class ReconnectingSocketOutputStream extends OutputStream {
                 closeQuietly();
             }
         }
+    }
+
+    public void reconnect() throws IOException {
+        closeQuietly();
+        connect();
     }
 
     public void closeQuietly() {
