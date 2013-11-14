@@ -56,7 +56,7 @@ public class ReconnectingSocketOutputStream extends OutputStream {
                 ByteBuffer buffer = ByteBuffer.wrap(b, off, len);
                 while (buffer.hasRemaining()) {
                     int written = channel.write(buffer);
-                    if (written < 0) {
+                    if (written <= 0) {
                         throw new EOFException();
                     }
                 }

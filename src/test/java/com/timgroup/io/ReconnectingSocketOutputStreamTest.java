@@ -79,6 +79,24 @@ public class ReconnectingSocketOutputStreamTest {
         assertEquals("hello", line.get(100, TimeUnit.MILLISECONDS));
     }
 
+    @Test
+    public void blocksIfNecessaryOnWrite() throws Exception {
+        serverSocket = new ServerSocket(port);
+        byte[] stuffing = ByteArrayUtils.fill(1024, (byte) '\n');
+
+        Future<String> line = eventuallyReadFirstNonBlankLine(serverSocket, 500);
+
+        ReconnectingSocketOutputStream out = new ReconnectingSocketOutputStream("localhost", port);
+
+        for (int i = 0; i < 2 * MINIMUM_DATA_TO_GET_BROKEN_PIPE / stuffing.length; ++i) {
+            out.write(stuffing);
+        }
+        out.write("hello\n".getBytes());
+        out.close();
+
+        assertEquals("hello", line.get(700, TimeUnit.MILLISECONDS));
+    }
+
     private Future<String> readLine(final ServerSocket serverSocket) {
         return Executors.newSingleThreadExecutor().submit(new Callable<String>() {
             @Override
@@ -98,6 +116,24 @@ public class ReconnectingSocketOutputStreamTest {
             @Override
             public Socket call() throws Exception {
                 return serverSocket.accept();
+            }
+        });
+    }
+
+    private Future<String> eventuallyReadFirstNonBlankLine(final ServerSocket serverSocket, final int delay) {
+        return Executors.newSingleThreadExecutor().submit(new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                Socket socket = serverSocket.accept();
+                Thread.sleep(delay);
+                try {
+                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    String line;
+                    while ((line = in.readLine()) != null && line.equals(""));
+                    return line;
+                } finally {
+                    socket.close();
+                }
             }
         });
     }

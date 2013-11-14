@@ -1,5 +1,7 @@
 package com.timgroup.io;
 
+import java.util.Arrays;
+
 public class ByteArrayUtils {
 
     public static byte[] pad(byte[] b, int length) {
@@ -20,6 +22,12 @@ public class ByteArrayUtils {
             off += part.length;
         }
         return whole;
+    }
+
+    public static byte[] fill(int length, byte val) {
+        byte[] a = new byte[length];
+        Arrays.fill(a, val);
+        return a;
     }
 
 }
