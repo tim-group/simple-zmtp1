@@ -13,7 +13,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -27,7 +26,7 @@ public class ReconnectingSocketOutputStreamTest {
     private static final Random RANDOM = new Random();
 
     @Rule
-    public final TestRule timeout = new Timeout(1000);
+    public final TestRule timeout = new Timeout(5000);
 
     private final int port = 1024 + RANDOM.nextInt(65536 - 1024);
     private ServerSocket serverSocket;
@@ -97,7 +96,6 @@ public class ReconnectingSocketOutputStreamTest {
         assertEquals("hello", line.get(700, TimeUnit.MILLISECONDS));
     }
 
-    @Ignore("we need to sleep between reconnect attempts if we can't connect, it seems")
     @Test
     public void blocksIfNecessaryOnReconnect() throws Exception {
         serverSocket = new ServerSocket(port);

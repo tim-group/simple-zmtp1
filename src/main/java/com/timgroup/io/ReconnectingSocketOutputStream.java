@@ -2,7 +2,9 @@ package com.timgroup.io;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -60,10 +62,8 @@ public class ReconnectingSocketOutputStream extends OutputStream {
     public void write(byte[] b, int off, int len) throws IOException {
         List<IOException> exceptions = null;
         for (int i = 0; i < tryCount; ++i) {
-            if (channel == null || !channel.isOpen()) {
-                reconnect();
-            }
             try {
+                ensureOpen();
                 ByteBuffer buffer = ByteBuffer.wrap(b, off, len);
                 while (buffer.hasRemaining()) {
                     checkForRead();
@@ -85,6 +85,27 @@ public class ReconnectingSocketOutputStream extends OutputStream {
         }
         assert exceptions != null && !exceptions.isEmpty();
         throw new IOException("write failed after " + tryCount + " tries; exceptions = " + exceptions, exceptions.get(0));
+    }
+
+    private void ensureOpen() throws IOException {
+        if (channel == null || !channel.isOpen()) {
+            try {
+                reconnect();
+            } catch (ConnectException e) {
+                sleep(1000);
+                throw e;
+            }
+        }
+    }
+
+    private void sleep(int millis) throws InterruptedIOException {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            InterruptedIOException e2 = new InterruptedIOException();
+            e2.initCause(e);
+            throw e2;
+        }
     }
 
     private void checkForRead() throws IOException {
