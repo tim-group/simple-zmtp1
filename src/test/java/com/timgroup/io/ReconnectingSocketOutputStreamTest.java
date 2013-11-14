@@ -13,6 +13,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -96,6 +97,25 @@ public class ReconnectingSocketOutputStreamTest {
         assertEquals("hello", line.get(700, TimeUnit.MILLISECONDS));
     }
 
+    @Ignore("we need to sleep between reconnect attempts if we can't connect, it seems")
+    @Test
+    public void blocksIfNecessaryOnReconnect() throws Exception {
+        serverSocket = new ServerSocket(port);
+
+        Future<Socket> socket = connect(serverSocket);
+
+        ReconnectingSocketOutputStream out = new ReconnectingSocketOutputStream("localhost", port);
+
+        socket.get(100, TimeUnit.MILLISECONDS).close();
+        serverSocket.close();
+        Future<String> line = eventuallyBindAcceptAndReadLine(port, 500);
+
+        out.write("hello\n".getBytes());
+        out.close();
+
+        assertEquals("hello", line.get(600, TimeUnit.MILLISECONDS));
+    }
+
     private Future<String> readLine(final ServerSocket serverSocket) {
         return Executors.newSingleThreadExecutor().submit(new Callable<String>() {
             @Override
@@ -130,6 +150,22 @@ public class ReconnectingSocketOutputStreamTest {
                     String line;
                     while ((line = in.readLine()) != null && line.equals(""));
                     return line;
+                } finally {
+                    socket.close();
+                }
+            }
+        });
+    }
+
+    private Future<String> eventuallyBindAcceptAndReadLine(final int port, final int delay) {
+        return Executors.newSingleThreadExecutor().submit(new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                Thread.sleep(delay);
+                serverSocket = new ServerSocket(port);
+                Socket socket = serverSocket.accept();
+                try {
+                    return new BufferedReader(new InputStreamReader(socket.getInputStream())).readLine();
                 } finally {
                     socket.close();
                 }
