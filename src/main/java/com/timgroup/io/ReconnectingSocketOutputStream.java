@@ -9,6 +9,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ReconnectingSocketOutputStream extends OutputStream {
 
@@ -56,6 +58,7 @@ public class ReconnectingSocketOutputStream extends OutputStream {
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
+        List<IOException> exceptions = null;
         for (int i = 0; i < tryCount; ++i) {
             if (channel == null || !channel.isOpen()) {
                 reconnect();
@@ -72,10 +75,16 @@ public class ReconnectingSocketOutputStream extends OutputStream {
                     }
                 }
                 return;
-            } catch (Exception e) {
+            } catch (IOException e) {
+                if (exceptions == null) {
+                    exceptions = new ArrayList<IOException>(tryCount);
+                }
+                exceptions.add(e);
                 closeQuietly();
             }
         }
+        assert exceptions != null && !exceptions.isEmpty();
+        throw new IOException("write failed after " + tryCount + " tries; exceptions = " + exceptions, exceptions.get(0));
     }
 
     private void checkForRead() throws IOException {
