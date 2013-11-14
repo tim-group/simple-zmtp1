@@ -23,7 +23,6 @@ import static org.junit.Assert.fail;
 
 public class ReconnectingSocketOutputStreamTest {
 
-    private static final int MINIMUM_DATA_TO_GET_BROKEN_PIPE = 160 * 1024 + 1;
     private static final Random RANDOM = new Random();
 
     @Rule
@@ -73,7 +72,7 @@ public class ReconnectingSocketOutputStreamTest {
         socket.get(100, TimeUnit.MILLISECONDS).close();
         Future<String> line = readLine(serverSocket);
 
-        out.write(ByteArrayUtils.pad("hello\n".getBytes(), MINIMUM_DATA_TO_GET_BROKEN_PIPE));
+        out.write("hello\n".getBytes());
         out.close();
 
         assertEquals("hello", line.get(100, TimeUnit.MILLISECONDS));
@@ -88,7 +87,7 @@ public class ReconnectingSocketOutputStreamTest {
 
         ReconnectingSocketOutputStream out = new ReconnectingSocketOutputStream("localhost", port);
 
-        for (int i = 0; i < 2 * MINIMUM_DATA_TO_GET_BROKEN_PIPE / stuffing.length; ++i) {
+        for (int i = 0; i < 320; ++i) {
             out.write(stuffing);
         }
         out.write("hello\n".getBytes());
