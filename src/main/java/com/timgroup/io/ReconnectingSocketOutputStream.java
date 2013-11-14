@@ -88,25 +88,22 @@ public class ReconnectingSocketOutputStream extends OutputStream {
     }
 
     private void checkForRead() throws IOException {
-        channel.register(selector, SelectionKey.OP_READ);
-        int selected = selector.selectNow();
-        if (selected != 0) {
+        SelectionKey key = channel.register(selector, SelectionKey.OP_READ);
+        selector.selectNow();
+        if (key.isReadable()) {
             drain();
         }
     }
 
     private void blockForWrite() throws IOException {
-        channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-        while (true) {
+        SelectionKey key = channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+        while (!key.isWritable()) {
             int selected = selector.select();
             if (selected == 0) {
                 throw new IOException("failed to select");
             }
-            SelectionKey key = selector.selectedKeys().iterator().next();
             if (key.isReadable()) {
                 drain();
-            } else {
-                return;
             }
         }
     }
