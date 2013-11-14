@@ -12,26 +12,27 @@ import java.nio.channels.SocketChannel;
 
 public class ReconnectingSocketOutputStream extends OutputStream {
 
-    public static final int DEFAULT_RETRY_COUNT = 3;
+    public static final int DEFAULT_TRY_COUNT = 3;
 
     private final String host;
     private final int port;
-    private final int retryCount;
+    private final int tryCount;
     private final Selector selector;
     private final ByteBuffer drainBuffer;
     private SocketChannel channel;
 
-    public ReconnectingSocketOutputStream(String host, int port, int retryCount) throws IOException {
+    public ReconnectingSocketOutputStream(String host, int port, int tryCount) throws IOException {
+        if (tryCount < 1) throw new IllegalArgumentException("tryCount must be at least one");
         this.host = host;
         this.port = port;
-        this.retryCount = retryCount;
+        this.tryCount = tryCount;
         this.selector = Selector.open();
         this.drainBuffer = ByteBuffer.allocate(32); // this is small because for ZMTP, we do not expect much data to come our way
         connect();
     }
 
     public ReconnectingSocketOutputStream(String host, int port) throws IOException {
-        this(host, port, DEFAULT_RETRY_COUNT);
+        this(host, port, DEFAULT_TRY_COUNT);
     }
 
     private void connect() throws IOException {
@@ -55,7 +56,7 @@ public class ReconnectingSocketOutputStream extends OutputStream {
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-        for (int i = 0; i < retryCount; ++i) {
+        for (int i = 0; i < tryCount; ++i) {
             if (channel == null || !channel.isOpen()) {
                 reconnect();
             }
