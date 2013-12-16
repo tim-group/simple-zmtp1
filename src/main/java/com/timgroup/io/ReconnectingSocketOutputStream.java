@@ -12,11 +12,13 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ReconnectingSocketOutputStream extends OutputStream {
 
     public static final int DEFAULT_TRY_COUNT = 3;
+    private static final byte[] EMPTY_BUFFER = new byte[0];
 
     private final String host;
     private final int port;
@@ -24,19 +26,31 @@ public class ReconnectingSocketOutputStream extends OutputStream {
     private final Selector selector;
     private final ByteBuffer drainBuffer;
     private SocketChannel channel;
+    private byte[] firstWrite;
 
-    public ReconnectingSocketOutputStream(String host, int port, int tryCount) throws IOException {
+    public ReconnectingSocketOutputStream(String host, int port, int tryCount, boolean replayFirstWrite) throws IOException {
         if (tryCount < 1) throw new IllegalArgumentException("tryCount must be at least one");
         this.host = host;
         this.port = port;
         this.tryCount = tryCount;
         this.selector = Selector.open();
         this.drainBuffer = ByteBuffer.allocate(32); // this is small because for ZMTP, we do not expect much data to come our way
+        if (!replayFirstWrite) {
+            this.firstWrite = EMPTY_BUFFER;
+        }
         connect();
     }
 
+    public ReconnectingSocketOutputStream(String host, int port, int tryCount) throws IOException {
+        this(host, port, tryCount, false);
+    }
+
+    public ReconnectingSocketOutputStream(String host, int port, boolean replayFirstWrite) throws IOException {
+        this(host, port, DEFAULT_TRY_COUNT, replayFirstWrite);
+    }
+
     public ReconnectingSocketOutputStream(String host, int port) throws IOException {
-        this(host, port, DEFAULT_TRY_COUNT);
+        this(host, port, false);
     }
 
     private void connect() throws IOException {
@@ -60,6 +74,7 @@ public class ReconnectingSocketOutputStream extends OutputStream {
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
+        captureFirstWrite(b, off, len);
         List<IOException> exceptions = null;
         for (int i = 0; i < tryCount; ++i) {
             try {
@@ -85,6 +100,12 @@ public class ReconnectingSocketOutputStream extends OutputStream {
         }
         assert exceptions != null && !exceptions.isEmpty();
         throw new IOException("write failed after " + tryCount + " tries; exceptions = " + exceptions, exceptions.get(0));
+    }
+
+    private void captureFirstWrite(byte[] b, int off, int len) {
+        if (firstWrite == null) {
+            firstWrite = Arrays.copyOfRange(b, off, off + len);
+        }
     }
 
     private void ensureOpen() throws IOException {
@@ -138,6 +159,7 @@ public class ReconnectingSocketOutputStream extends OutputStream {
     public void reconnect() throws IOException {
         closeQuietly();
         connect();
+        replayFirstWrite();
     }
 
     public void closeQuietly() {
@@ -155,6 +177,12 @@ public class ReconnectingSocketOutputStream extends OutputStream {
             channel.close();
         } finally {
             channel = null;
+        }
+    }
+
+    private void replayFirstWrite() throws IOException {
+        if (firstWrite != null && firstWrite.length > 0) {
+            write(firstWrite);
         }
     }
 

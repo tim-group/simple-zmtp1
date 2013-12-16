@@ -132,6 +132,24 @@ public class ReconnectingSocketOutputStreamTest {
         assertEquals("hello", line.get(2700, TimeUnit.MILLISECONDS));
     }
 
+    @Test
+    public void canReplayTheFirstWriteOnReconnect() throws Exception {
+        serverSocket = new ServerSocket(port);
+
+        ReconnectingSocketOutputStream out = new ReconnectingSocketOutputStream("localhost", port, true);
+
+        Future<String> firstLine = readLine(serverSocket);
+        out.write("hello ".getBytes());
+        out.write("world\n".getBytes());
+        assertEquals("hello world", firstLine.get());
+
+        Future<String> secondLine = readLine(serverSocket);
+        out.write("kitty\n".getBytes());
+        assertEquals("hello kitty", secondLine.get());
+
+        out.close();
+    }
+
     private Future<String> readLine(final ServerSocket serverSocket) {
         return Executors.newSingleThreadExecutor().submit(new Callable<String>() {
             @Override
