@@ -114,6 +114,24 @@ public class ReconnectingSocketOutputStreamTest {
         assertEquals("hello", line.get(600, TimeUnit.MILLISECONDS));
     }
 
+    @Test
+    public void reconnectsEvenIfBlockedOnWrite() throws Exception {
+        serverSocket = new ServerSocket(port);
+        byte[] stuffing = ByteArrayUtils.fill(1024, (byte) '\n');
+
+        Future<String> line = eventuallyAcceptCloseAcceptAgainAndFinallyReadFirstNonBlankLine(serverSocket, 2500);
+
+        ReconnectingSocketOutputStream out = new ReconnectingSocketOutputStream("localhost", port);
+
+        for (int i = 0; i < 10000; ++i) {
+            out.write(stuffing);
+        }
+        out.write("hello\n".getBytes());
+        out.close();
+
+        assertEquals("hello", line.get(2700, TimeUnit.MILLISECONDS));
+    }
+
     private Future<String> readLine(final ServerSocket serverSocket) {
         return Executors.newSingleThreadExecutor().submit(new Callable<String>() {
             @Override
@@ -163,6 +181,28 @@ public class ReconnectingSocketOutputStreamTest {
                     return readLine(socket);
                 } finally {
                     socket.close();
+                }
+            }
+        });
+    }
+
+    private Future<String> eventuallyAcceptCloseAcceptAgainAndFinallyReadFirstNonBlankLine(final ServerSocket serverSocket, final int delay) {
+        return Executors.newSingleThreadExecutor().submit(new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                Thread.sleep(delay);
+                Socket firstSocket = serverSocket.accept();
+                try {
+                    readLine(firstSocket); // just to demonstrate we're connected
+                }
+                finally {
+                    firstSocket.close();
+                }
+                Socket secondSocket = serverSocket.accept();
+                try {
+                    return readFirstNonBlankLine(secondSocket);
+                } finally {
+                    secondSocket.close();
                 }
             }
         });
