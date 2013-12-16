@@ -120,7 +120,7 @@ public class ReconnectingSocketOutputStreamTest {
             public String call() throws Exception {
                 Socket socket = serverSocket.accept();
                 try {
-                    return new BufferedReader(new InputStreamReader(socket.getInputStream())).readLine();
+                    return readLine(socket);
                 } finally {
                     socket.close();
                 }
@@ -144,10 +144,7 @@ public class ReconnectingSocketOutputStreamTest {
                 Socket socket = serverSocket.accept();
                 Thread.sleep(delay);
                 try {
-                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    String line;
-                    while ((line = in.readLine()) != null && line.equals(""));
-                    return line;
+                    return readFirstNonBlankLine(socket);
                 } finally {
                     socket.close();
                 }
@@ -163,7 +160,7 @@ public class ReconnectingSocketOutputStreamTest {
                 serverSocket = new ServerSocket(port);
                 Socket socket = serverSocket.accept();
                 try {
-                    return new BufferedReader(new InputStreamReader(socket.getInputStream())).readLine();
+                    return readLine(socket);
                 } finally {
                     socket.close();
                 }
@@ -171,4 +168,18 @@ public class ReconnectingSocketOutputStreamTest {
         });
     }
 
+    private String readLine(Socket socket) throws IOException {
+        return readerFrom(socket).readLine();
+    }
+
+    private String readFirstNonBlankLine(Socket socket) throws IOException {
+        BufferedReader in = readerFrom(socket);
+        String line;
+        while ((line = in.readLine()) != null && line.equals(""));
+        return line;
+    }
+
+    private BufferedReader readerFrom(Socket socket) throws IOException {
+        return new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    }
 }
