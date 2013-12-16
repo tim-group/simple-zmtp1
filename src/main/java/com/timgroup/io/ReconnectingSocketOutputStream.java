@@ -17,7 +17,7 @@ import java.util.List;
 
 public class ReconnectingSocketOutputStream extends OutputStream {
 
-    public static final int DEFAULT_TRY_COUNT = 3;
+    public static final int DEFAULT_TRY_COUNT = 3 * 60;
     private static final byte[] EMPTY_BUFFER = new byte[0];
 
     private final String host;
