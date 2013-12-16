@@ -27,3 +27,10 @@ Something like::
     MessageOutputStream out = new MessageOutputStream(new FrameOutputStream(new BufferedOutputStream(socket.getOutputStream())));
     out.write(message.getBytes());
     out.flush();
+
+If you want automatic reconnection, do something like::
+
+    OutputStream sout = new ReconnectingSocketOutputStream(host, port, true);
+    MessageOutputStream out = new MessageOutputStream(new FrameOutputStream(new FullyBufferedOutputStream(sout)));
+    out.write(message.getBytes());
+    out.flush();
