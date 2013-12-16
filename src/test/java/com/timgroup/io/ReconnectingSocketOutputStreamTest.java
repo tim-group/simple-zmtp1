@@ -26,7 +26,7 @@ public class ReconnectingSocketOutputStreamTest {
     private static final Random RANDOM = new Random();
 
     @Rule
-    public final TestRule timeout = new Timeout(5000);
+    public final TestRule timeout = new Timeout(10000);
 
     private final int port = 1024 + RANDOM.nextInt(65536 - 1024);
     private ServerSocket serverSocket;
@@ -83,17 +83,17 @@ public class ReconnectingSocketOutputStreamTest {
         serverSocket = new ServerSocket(port);
         byte[] stuffing = ByteArrayUtils.fill(1024, (byte) '\n');
 
-        Future<String> line = eventuallyReadFirstNonBlankLine(serverSocket, 500);
+        Future<String> line = eventuallyReadFirstNonBlankLine(serverSocket, 2500);
 
         ReconnectingSocketOutputStream out = new ReconnectingSocketOutputStream("localhost", port);
 
-        for (int i = 0; i < 320; ++i) {
+        for (int i = 0; i < 100000; ++i) {
             out.write(stuffing);
         }
         out.write("hello\n".getBytes());
         out.close();
 
-        assertEquals("hello", line.get(700, TimeUnit.MILLISECONDS));
+        assertEquals("hello", line.get(2700, TimeUnit.MILLISECONDS));
     }
 
     @Test
