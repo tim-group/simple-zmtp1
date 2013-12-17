@@ -9,9 +9,9 @@ public class FullyBufferedOutputStream extends FilterOutputStream {
 
     private final OutputStream realOut;
 
-    public FullyBufferedOutputStream(OutputStream out) {
+    public FullyBufferedOutputStream(OutputStream realOut) {
         super(new ByteArrayOutputStream());
-        realOut = out;
+        this.realOut = realOut;
     }
 
     @Override

@@ -6,16 +6,20 @@ import java.util.Iterator;
 
 public class MessageOutputStream extends FilterOutputStream {
 
-    public static final byte[] EMPTY_FRAME = {};
+    public static final byte[] ANONYMOUS = {};
 
     public MessageOutputStream(FrameOutputStream out) throws IOException {
         super(out);
-        out().write(EMPTY_FRAME);
+        writeGreeting(ANONYMOUS);
     }
 
     public MessageOutputStream(FrameOutputStream out, String identity) throws IOException {
         super(out);
-        out().write(identity.getBytes(Charsets.US_ASCII));
+        writeGreeting(identity.getBytes(Charsets.US_ASCII));
+    }
+
+    private void writeGreeting(byte[] identity) throws IOException {
+        out().write(identity);
     }
 
     private FrameOutputStream out() {

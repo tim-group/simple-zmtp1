@@ -11,8 +11,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 public class ReconnectingSocketOutputStream extends OutputStream {
@@ -74,25 +74,16 @@ public class ReconnectingSocketOutputStream extends OutputStream {
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-        captureFirstWrite(b, off, len);
+        recordFirstWrite(b, off, len);
         List<IOException> exceptions = null;
         for (int i = 0; i < tryCount; ++i) {
             try {
                 ensureOpen();
-                ByteBuffer buffer = ByteBuffer.wrap(b, off, len);
-                while (buffer.hasRemaining()) {
-                    checkForRead();
-                    int written = channel.write(buffer);
-                    if (written == 0) {
-                        blockForWrite();
-                    } else if (written < 0) {
-                        throw new EOFException();
-                    }
-                }
+                writeFully(b, off, len);
                 return;
             } catch (IOException e) {
                 if (exceptions == null) {
-                    exceptions = new ArrayList<IOException>(tryCount);
+                    exceptions = new LinkedList<IOException>();
                 }
                 exceptions.add(e);
                 closeQuietly();
@@ -102,7 +93,7 @@ public class ReconnectingSocketOutputStream extends OutputStream {
         throw new IOException("write failed after " + tryCount + " tries; exceptions = " + exceptions, exceptions.get(0));
     }
 
-    private void captureFirstWrite(byte[] b, int off, int len) {
+    private void recordFirstWrite(byte[] b, int off, int len) {
         if (firstWrite == null) {
             firstWrite = Arrays.copyOfRange(b, off, off + len);
         }
@@ -126,6 +117,19 @@ public class ReconnectingSocketOutputStream extends OutputStream {
             InterruptedIOException e2 = new InterruptedIOException();
             e2.initCause(e);
             throw e2;
+        }
+    }
+
+    private void writeFully(byte[] b, int off, int len) throws IOException, EOFException {
+        ByteBuffer buffer = ByteBuffer.wrap(b, off, len);
+        while (buffer.hasRemaining()) {
+            checkForRead();
+            int written = channel.write(buffer);
+            if (written == 0) {
+                blockForWrite();
+            } else if (written < 0) {
+                throw new EOFException();
+            }
         }
     }
 
@@ -162,6 +166,12 @@ public class ReconnectingSocketOutputStream extends OutputStream {
         replayFirstWrite();
     }
 
+    private void replayFirstWrite() throws IOException {
+        if (firstWrite != null && firstWrite.length > 0) {
+            write(firstWrite);
+        }
+    }
+
     public void closeQuietly() {
         try {
             close();
@@ -177,12 +187,6 @@ public class ReconnectingSocketOutputStream extends OutputStream {
             channel.close();
         } finally {
             channel = null;
-        }
-    }
-
-    private void replayFirstWrite() throws IOException {
-        if (firstWrite != null && firstWrite.length > 0) {
-            write(firstWrite);
         }
     }
 
