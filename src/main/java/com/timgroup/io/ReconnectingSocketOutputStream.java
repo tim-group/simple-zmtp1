@@ -17,7 +17,7 @@ import java.util.List;
 public class ReconnectingSocketOutputStream extends OutputStream {
 
     public static final int DEFAULT_TRY_COUNT = 3 * 60;
-    private static final byte[] EMPTY_BUFFER = new byte[0];
+    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
     private final String host;
     private final int port;
@@ -25,7 +25,7 @@ public class ReconnectingSocketOutputStream extends OutputStream {
     private final Selector selector;
     private final ByteBuffer drainBuffer;
     private SocketChannel channel;
-    private byte[] firstWrite;
+    private ByteBuffer firstWrite;
 
     public ReconnectingSocketOutputStream(String host, int port, int tryCount, boolean replayFirstWrite) throws IOException {
         if (tryCount < 1) throw new IllegalArgumentException("tryCount must be at least one");
@@ -108,15 +108,15 @@ public class ReconnectingSocketOutputStream extends OutputStream {
 
     private void recordFirstWrite(ByteBuffer buffer) {
         if (firstWrite == null) {
-            firstWrite = getRemaining(buffer);
-            buffer.reset();
+            firstWrite = copy(buffer);
         }
     }
 
-    private static byte[] getRemaining(ByteBuffer buffer) {
-        byte[] b = new byte[buffer.remaining()];
-        buffer.get(b);
-        return b;
+    private static ByteBuffer copy(ByteBuffer buffer) {
+        ByteBuffer copy = ByteBuffer.allocate(buffer.remaining());
+        copy.put(buffer.asReadOnlyBuffer());
+        copy.flip();
+        return copy;
     }
 
     private void ensureOpen() throws IOException {
@@ -186,7 +186,7 @@ public class ReconnectingSocketOutputStream extends OutputStream {
     }
 
     private void replayFirstWrite() throws IOException {
-        if (firstWrite != null && firstWrite.length > 0) {
+        if (firstWrite != null && firstWrite.remaining() > 0) {
             write(firstWrite);
         }
     }
