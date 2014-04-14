@@ -11,7 +11,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -74,12 +73,26 @@ public class ReconnectingSocketOutputStream extends OutputStream {
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-        recordFirstWrite(b, off, len);
+        write(ByteBuffer.wrap(b, off, len));
+    }
+
+    /**
+     * Writes bytes from the specified byte buffer starting at its position and
+     * stopping at its limit to this output stream. This is pretty much exactly
+     * equivalent to calling {{@link #write(byte[], int, int)} with
+     * buffer.array(), buffer.position(), and buffer.remaining().
+     *
+     * The buffer's mark is set to its initial position as a side effect.
+     */
+    public void write(ByteBuffer buffer) throws IOException {
+        buffer.mark();
+        recordFirstWrite(buffer);
         List<IOException> exceptions = null;
         for (int i = 0; i < tryCount; ++i) {
             try {
                 ensureOpen();
-                writeFully(b, off, len);
+                buffer.reset();
+                writeFully(buffer);
                 return;
             } catch (IOException e) {
                 if (exceptions == null) {
@@ -93,10 +106,17 @@ public class ReconnectingSocketOutputStream extends OutputStream {
         throw new IOException("write failed after " + tryCount + " tries; exceptions = " + exceptions, exceptions.get(0));
     }
 
-    private void recordFirstWrite(byte[] b, int off, int len) {
+    private void recordFirstWrite(ByteBuffer buffer) {
         if (firstWrite == null) {
-            firstWrite = Arrays.copyOfRange(b, off, off + len);
+            firstWrite = getRemaining(buffer);
+            buffer.reset();
         }
+    }
+
+    private static byte[] getRemaining(ByteBuffer buffer) {
+        byte[] b = new byte[buffer.remaining()];
+        buffer.get(b);
+        return b;
     }
 
     private void ensureOpen() throws IOException {
@@ -120,8 +140,7 @@ public class ReconnectingSocketOutputStream extends OutputStream {
         }
     }
 
-    private void writeFully(byte[] b, int off, int len) throws IOException, EOFException {
-        ByteBuffer buffer = ByteBuffer.wrap(b, off, len);
+    private void writeFully(ByteBuffer buffer) throws IOException, EOFException {
         while (buffer.hasRemaining()) {
             checkForRead();
             int written = channel.write(buffer);
