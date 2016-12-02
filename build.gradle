@@ -7,7 +7,7 @@ if (doSigning) {
 apply plugin: 'eclipse'
 
 group = 'com.timgroup'
-ext.url = 'https://github.com/youdevise/simple-zmtp10'
+ext.url = 'https://github.com/tim-group/simple-zmtp1'
 
 def majorVersion = 1
 def minorVersion = 0
