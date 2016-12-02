@@ -45,11 +45,12 @@ jar {
 }
 
 repositories {
-    mavenLocal()
     if (project.hasProperty('repoUrl')) {
-        mavenRepo url: "${project.repoUrl}/groups/public"
-    }
-    else {
+        maven {
+            name "nexus"
+            url "${project.repoUrl}/groups/public"
+        }
+    } else {
         mavenCentral()
     }
 }
