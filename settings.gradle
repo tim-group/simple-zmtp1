@@ -1,0 +1,10 @@
+pluginManagement {
+    repositories {
+        maven {
+            name "nexus"
+            url "${repoUrl}/groups/public"
+        }
+    }
+}
+
+rootProject.name = "simple-zmtp1"
