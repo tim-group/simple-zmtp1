@@ -10,6 +10,7 @@ ext {
 
 group = "com.timgroup"
 if (System.getenv("BUILD_NUMBER")) version = "1.0.${System.getenv('BUILD_NUMBER')}"
+description = "A plausibly simple ZMTP/1.0 library"
 
 jar {
     manifest { 
@@ -83,7 +84,7 @@ publishing {
                 asNode().children().last() + {
                     resolveStrategy = DELEGATE_FIRST
                     name project.ext.has('pomName') ? project.ext.pomName : project.name
-                    description = project.description
+                    description project.description
                     url githubUrl
                     licenses {
                         license {
