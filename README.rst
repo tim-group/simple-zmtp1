@@ -1,6 +1,9 @@
 What is it?
 ===========
 
+.. image:: https://travis-ci.org/tim-group/simple-zmtp1.svg?branch=master
+    :target: https://travis-ci.org/tim-group/simple-zmtp1
+
 This is a plausibly simple ZMTP/1.0 library.
 
 That is, it provides the ability to speak enough ZMTP to send messages to a ZeroMQ peer, and, one day, to read messages back from it, and it does this as simply as possible (not no more simply).
