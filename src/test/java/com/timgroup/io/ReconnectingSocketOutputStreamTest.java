@@ -1,5 +1,11 @@
 package com.timgroup.io;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.Timeout;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -12,12 +18,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.rules.Timeout;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -26,7 +26,7 @@ public class ReconnectingSocketOutputStreamTest {
     private static final Random RANDOM = new Random();
 
     @Rule
-    public final TestRule timeout = new Timeout(10000);
+    public final TestRule timeout = Timeout.millis(10000);
 
     private final int port = 1024 + RANDOM.nextInt(65536 - 1024);
     private ServerSocket serverSocket;
